@@ -102,3 +102,13 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Ignore Datasets
+*/Datasets/
+
+# Ignore Specific Datasets
+NY Taxi Cab/input/
+
+# Ignore VS Code Settings files
+launch.json
+settings.json
