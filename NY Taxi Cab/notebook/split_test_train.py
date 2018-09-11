@@ -6,7 +6,7 @@ import os
 import shutil
 
 BATCH_SIZE = 1000000
-FILE_PATH = r'../input/'
+FILE_PATH = os.path.join(os.path.dirname(__file__), r'../input/')
 FILE_NAME = r'train'
 FILE_EXTN = r'.csv'
 
