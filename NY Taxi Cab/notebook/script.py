@@ -19,7 +19,7 @@
 # ](https://www.kaggle.com/paultimothymooney/how-to-query-the-nyc-open-data)
 # 
 
-# In[94]:
+# In[14]:
 
 
 # This Python 3 environment comes with many helpful analytics libraries installed
@@ -39,40 +39,42 @@ import math
 import datetime
 import os
 
+import traceback
+
 import tensorflow as tf
 import shutil
 print(tf.__version__)
 
 
-# In[95]:
+# In[15]:
 
 
 #disable GPU for now
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 
-# In[96]:
+# In[16]:
 
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10000
 
 # Try to load the data. This may be an intensive process
-df_train = pd.read_csv(r'M:\kaggle\NY Taxi Cab\input\train.csv', nrows = 100, parse_dates=["pickup_datetime"])
+df_train = pd.read_csv(r'M:\kaggle\NY Taxi Cab\input\train.csv', nrows = BATCH_SIZE, parse_dates=["pickup_datetime"]);
 
 
-# In[97]:
+# In[17]:
 
 
-df_train.head(n=100)
+df_train.head(n=10)
 
 
-# In[98]:
+# In[18]:
 
 
 df_train.describe()
 
 
-# In[115]:
+# In[19]:
 
 
 CSV_COLUMNS = ['key',
@@ -97,86 +99,60 @@ DEFAULTS = [['NoKey'],
 
 TRAIN_TEST_SPLIT_RATIO = 0.8
 
-def read_dataset(filename, mode, header_lines = 1):
 
-    dataset = tf.data.TextLineDataset(filenames=filename).skip(header_lines)
+# In[20]:
 
-    def parse_batch(single_batch):
-        
-        if mode == tf.estimator.ModeKeys.PREDICT:
-            
-            # Test dataset does not have Label Column
-            columns = tf.decode_csv(single_batch, record_defaults = DEFAULTS[:1] + DEFAULTS[2:])
-            features = dict(zip(CSV_COLUMNS[:1] + CSV_COLUMNS[2:], columns))
-            label = None # features.pop(LABEL_COLUMN) #
-            
-        else:
-            
-            columns = tf.decode_csv(single_batch, record_defaults = DEFAULTS)
-            
-            split_location = int(BATCH_SIZE * TRAIN_TEST_SPLIT_RATIO)
-            
-            if mode == tf.estimator.ModeKeys.TRAIN:
-                columns = map(lambda c: tf.slice(c, 0, 2), columns)
-                
-            elif mode == tf.estimator.ModeKeys.EVAL:
-                columns = map(lambda c: tf.slice(c, 0, 2), columns)
-            
-            features = dict(zip(CSV_COLUMNS, columns))
-            label = features.pop(LABEL_COLUMN)
-            
-        return features, label
 
-    # Shard dataset into batches
-    dataset = dataset.batch(BATCH_SIZE)
+def read_dataset(filename, mode, batch_size = 512):
+  def _input_fn():
+    def decode_csv(value_column):
+      columns = tf.decode_csv(value_column, record_defaults = DEFAULTS)
+      features = dict(zip(CSV_COLUMNS, columns))
+      label = features.pop(LABEL_COLUMN)
+      return features, label
+
+    # Create list of file names that match "glob" pattern (i.e. data_file_*.csv)
+    filenames_dataset = tf.data.Dataset.list_files(filename)
+    # Read lines from text files
+    textlines_dataset = filenames_dataset.flat_map(tf.data.TextLineDataset)
+    # Parse text lines as comma-separated values (CSV)
+    dataset = textlines_dataset.map(decode_csv)
     
-    # Parse batches individually
-    dataset = dataset.map(parse_batch)
-                                                                                  
-    return dataset
+    # Note:
+    # use tf.data.Dataset.flat_map to apply one to many transformations (here: filename -> text lines)
+    # use tf.data.Dataset.map      to apply one to one  transformations (here: text line -> feature list)
+    
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        num_epochs = None # loop indefinitely
+        dataset = dataset.shuffle(buffer_size = 10 * batch_size)
+    else:
+        num_epochs = 1 # end-of-input after this
+
+    dataset = dataset.repeat(num_epochs).batch(batch_size)
+    
+    return dataset.make_one_shot_iterator().get_next()
+  return _input_fn
+
+
+# In[21]:
+
 
 def get_train():
-  return read_dataset('../input/train.csv', mode = tf.estimator.ModeKeys.TRAIN)
+  return read_dataset('../input/train/train-*.csv', mode = tf.estimator.ModeKeys.TRAIN)
 
 def get_valid():
-  return read_dataset('../input/train.csv', mode = tf.estimator.ModeKeys.EVAL)
+  return read_dataset('../input/train/test-*.csv', mode = tf.estimator.ModeKeys.EVAL)
 
 def get_test():
   return read_dataset('../input/test.csv', mode = tf.estimator.ModeKeys.PREDICT)
 
 
-# In[116]:
+# In[23]:
 
 
-csv_filename_ = '../input/rohit.csv'
-header_lines_ = 1
-delim_ = ','
-
-with tf.Session() as tld_sess:
-    tld_sess.run(tf.global_variables_initializer())
-    #try:
-    print('--- TRAIN DATASET -------------------')
-
-    tld = get_train()
-    tld_next = tld.make_one_shot_iterator().get_next()
-    for x in range(BATCH_SIZE-1):
-        tld_features, tld_label = tld_sess.run(tld_next)
-        #print('-----------------------')
-        #print(tld_features)
-        print('-----------------------')
-        print(tld_label)
-        print('-----------------------')
-
-    print('--- TEST DATASET --------------------')
-    tlt = get_valid()
-    tlt_next = tlt.make_one_shot_iterator().get_next()
-    for x in range(BATCH_SIZE-1):
-        tld_features, tld_label = tld_sess.run(tlt_next)
-        #print('-----------------------')
-        #print(tld_features)
-        print('-----------------------')
-        print(tld_label)
-        print('-----------------------')
-    #except Exception as e:
-    #    print('Failed: '+ str(e))
+with tf.Session() as sess:
+    try:
+        pass
+    except:
+        traceback.print_exc()
 
