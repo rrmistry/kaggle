@@ -107,7 +107,7 @@ venv.bak/
 */Datasets/
 
 # Ignore Specific Datasets
-NY Taxi Cab/input/
+NY_Taxi_Cab/input/
 
 # Ignore VS Code Settings files
 launch.json

@@ -8,15 +8,18 @@ activate tensorflow
 python -m pip install --upgrade pip
 
 # Install pandas library
-conda install pandas
+pip install pandas
 
 # Install jupyter notebook
-conda install jupyter
-
-# Install tensorflow
-conda install tensorflow
-conda install tensorflow-gpu
+pip install jupyter
 
 # Update python linter for better intellisense
-conda install pylint
+pip install pylint
+
+# Install Plotting Libraries
+pip install matplotlib
+
+# Install tensorflow
+pip install --ignore-installed --upgrade tensorflow
+pip install --ignore-installed --upgrade tensorflow-gpu
 

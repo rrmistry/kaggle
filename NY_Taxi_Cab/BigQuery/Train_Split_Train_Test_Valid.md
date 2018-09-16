@@ -7,3 +7,7 @@
 | valid |      10698037 | 0.19995707049811847925716111772139 |
 | valid |      10698037 | 0.19995707049811847925716111772139 |
 | total |      53501669 | 1.0                                |
+
+Make sure to copy over data from cloud storage to local disk:
+
+`gsutil cp "gs://{$BUCKET}/NY_Taxi_Cab/train_split/*.csv" "..\input\train_split"`
