@@ -19,6 +19,9 @@ pip install pylint
 # Install Plotting Libraries
 pip install matplotlib
 
+# Install SciPy Library for statistical operations
+pip install scipy
+
 # Install tensorflow
 pip install --ignore-installed --upgrade tensorflow
 pip install --ignore-installed --upgrade tensorflow-gpu
