@@ -59,12 +59,12 @@ print(tf.__version__)
 BASE_PATH = r'C:\Users\mistr\source\repos\rrmistry\kaggle\NY_Taxi_Cab' # os.path.dirname("__file__")
 BASE_DATA_PATH = os.path.join(BASE_PATH, 'input\\train_split\\')
 
-BATCH_SIZE = 2084
+BATCH_SIZE = 512
 
 print('Started reading dataset ------------- ', datetime.datetime.now())
 
 # Try to load the data. This may be an intensive process
-df_sample = pd.read_csv(os.path.join(BASE_DATA_PATH, 'train-000000000003.csv'), nrows=BATCH_SIZE*2, parse_dates=["pickup_datetime"])
+# df_sample = pd.read_csv(os.path.join(BASE_DATA_PATH, 'train-000000000003.csv'), nrows=BATCH_SIZE*2, parse_dates=["pickup_datetime"])
 
 print('Finished reading dataset ------------- ', datetime.datetime.now())
 
@@ -74,35 +74,13 @@ print('Finished reading dataset ------------- ', datetime.datetime.now())
 # In[ ]:
 
 
-df_sample.head(n=10)
+# df_sample.head(n=10)
 
 
 # In[ ]:
 
 
-df_sample.describe()
-
-
-# ## Get stastics from training dataset
-
-
-# In[ ]:
-
-
-MEAN_PICKUP_LON = df_sample['pickuplon'].mean()
-MEAN_PICKUP_LAT = df_sample['pickuplat'].mean()
-MEAN_DROPOFF_LON = df_sample['dropofflon'].mean()
-MEAN_DROPOFF_LAT = df_sample['dropofflat'].mean()
-
-MAX_PICKUP_LON = df_sample['pickuplon'].max()
-MAX_PICKUP_LAT = df_sample['pickuplat'].max()
-MAX_DROPOFF_LON = df_sample['dropofflon'].max()
-MAX_DROPOFF_LAT = df_sample['dropofflat'].max()
-
-MIN_PICKUP_LON = df_sample['pickuplon'].min()
-MIN_PICKUP_LAT = df_sample['pickuplat'].min()
-MIN_DROPOFF_LON = df_sample['dropofflon'].min()
-MIN_DROPOFF_LAT = df_sample['dropofflat'].min()
+# df_sample.describe()
 
 
 # ## Define training dataset properties
@@ -113,7 +91,7 @@ MIN_DROPOFF_LAT = df_sample['dropofflat'].min()
 CSV_COLUMNS = 'key,key_original,fare_amount,pickup_datetime,dayofweek,dayofweek_numeric,hourofday,pickuplon,pickuplat,dropofflon,dropofflat,passengers'.split(',')
 LABEL_COLUMN = 'fare_amount'
 KEY_FEATURE_COLUMN = 'key'
-DEFAULTS = [['nokey'], ['nokey'], [0.0], ['badDate'], ['Sun'], [0], [0], [-74.0], [40.0], [-74.0], [40.7], [0]]
+DEFAULTS = [['nokey'], ['nokey'], [0.0], ['badDate'], ['Sun'], [0], [0], [-74.0], [40.0], [-74.0], [40.7], [0.0]]
 
 
 # ## These are the raw input columns, and will be provided for prediction also
@@ -153,7 +131,7 @@ def add_engineered(features):
     lon2 = features['dropofflon']
     latdiff = (lat1 - lat2)
     londiff = (lon1 - lon2)
-
+    
     # set features for distance with sign that indicates direction
     features['latdiff'] = latdiff
     features['londiff'] = londiff
@@ -248,14 +226,11 @@ def build_estimator(model_dir, hidden_units):
     # Input columns
     (dayofweek, hourofday, plat, plon, dlat, dlon, pcount, latdiff, londiff, euclidean) = INPUT_COLUMNS
 
-    nbuckets = 30
-
-    # Bucketize passengers
-    b_passengers = tf.feature_column.bucketized_column(pcount, np.linspace(1, 8, 8).tolist())
+    nbuckets = 35
 
     # Bucketize the lats & lons
-    latbuckets = np.linspace(MIN_PICKUP_LAT, MAX_PICKUP_LAT, nbuckets).tolist()
-    lonbuckets = np.linspace(MIN_PICKUP_LON, MAX_PICKUP_LON, nbuckets).tolist()
+    latbuckets = np.linspace(37.0, 45.0, nbuckets).tolist()
+    lonbuckets = np.linspace(-78.0, -70.0, nbuckets).tolist()
     b_plat = tf.feature_column.bucketized_column(plat, latbuckets)
     b_dlat = tf.feature_column.bucketized_column(dlat, latbuckets)
     b_plon = tf.feature_column.bucketized_column(plon, lonbuckets)
@@ -277,7 +252,7 @@ def build_estimator(model_dir, hidden_units):
         dayofweek, hourofday,
 
         # Anything with a linear relationship
-        b_passengers
+        pcount 
     ]
 
     deep_columns = [
@@ -290,7 +265,7 @@ def build_estimator(model_dir, hidden_units):
         latdiff, londiff, euclidean
     ]
 
-    optimizor = tf.train.ProximalGradientDescentOptimizer(learning_rate = 0.00005,
+    optimizor = tf.train.ProximalGradientDescentOptimizer(learning_rate = 0.0001,
                                                           l1_regularization_strength=0.05,
                                                           l2_regularization_strength=0.05,
                                                           ) # note the learning rate
@@ -342,7 +317,7 @@ def train_and_evaluate(args):
         start_delay_secs = 30,  # start evaluating after N seconds
         throttle_secs = 120,     # evaluate every N seconds
         )
-
+    
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
 
@@ -360,7 +335,7 @@ with tf.Session() as sess:
         "output_dir": OUTPUTDIR,
         "train_data_paths": os.path.join(BASE_DATA_PATH, '*.csv'),
         "eval_data_paths": os.path.join(BASE_DATA_PATH, '../test-*.csv'),
-        "train_batch_size": BATCH_SIZE,
+        "train_batch_size": 2048,
         "eval_batch_size": 512,
         "train_steps": 1000000,
         "eval_steps": 10,

@@ -10,4 +10,4 @@
 
 Make sure to copy over data from cloud storage to local disk:
 
-`gsutil cp "gs://{$BUCKET}/NY_Taxi_Cab/train_split/*.csv" "..\input\train_split"`
+`gsutil -m cp "gs://{$BUCKET}/NY_Taxi_Cab/train_split/*.csv" "..\input\train_split"`
