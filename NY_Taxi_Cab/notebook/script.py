@@ -59,12 +59,18 @@ print(tf.__version__)
 BASE_PATH = r'C:\Users\mistr\source\repos\rrmistry\kaggle\NY_Taxi_Cab' # os.path.dirname("__file__")
 BASE_DATA_PATH = os.path.join(BASE_PATH, 'input\\train_split\\')
 
-BATCH_SIZE = 2084
+BATCH_SIZE = 4096
+LEARNING_RATE = 0.00005
+L1_REGULARIZATION_RATE = 0.5
+L2_REGULARIZATION_RATE = 0.5
+NUM_BUCKETS = 30
+EVAL_START_DELAY = 30
+EVAL_THROTTLE_DELAY = 120
 
 print('Started reading dataset ------------- ', datetime.datetime.now())
 
 # Try to load the data. This may be an intensive process
-df_sample = pd.read_csv(os.path.join(BASE_DATA_PATH, 'train-000000000003.csv'), nrows=BATCH_SIZE*2, parse_dates=["pickup_datetime"])
+df_sample = pd.read_csv(os.path.join(BASE_DATA_PATH, 'train-000000000003.csv'), nrows=BATCH_SIZE * 4, parse_dates=["pickup_datetime"])
 
 print('Finished reading dataset ------------- ', datetime.datetime.now())
 
@@ -248,7 +254,7 @@ def build_estimator(model_dir, hidden_units):
     # Input columns
     (dayofweek, hourofday, plat, plon, dlat, dlon, pcount, latdiff, londiff, euclidean) = INPUT_COLUMNS
 
-    nbuckets = 30
+    nbuckets = NUM_BUCKETS
 
     # Bucketize passengers
     b_passengers = tf.feature_column.bucketized_column(pcount, np.linspace(1, 8, 8).tolist())
@@ -290,9 +296,9 @@ def build_estimator(model_dir, hidden_units):
         latdiff, londiff, euclidean
     ]
 
-    optimizor = tf.train.ProximalGradientDescentOptimizer(learning_rate = 0.00005,
-                                                          l1_regularization_strength=0.05,
-                                                          l2_regularization_strength=0.05,
+    optimizor = tf.train.ProximalGradientDescentOptimizer(learning_rate = LEARNING_RATE,
+                                                          l1_regularization_strength=L1_REGULARIZATION_RATE,
+                                                          l2_regularization_strength=L2_REGULARIZATION_RATE,
                                                           ) # note the learning rate
 
     ## setting the checkpoint interval to be much lower for this task
@@ -339,8 +345,8 @@ def train_and_evaluate(args):
             batch_size = args['eval_batch_size']),
         exporters = exporter,
         steps=100,
-        start_delay_secs = 30,  # start evaluating after N seconds
-        throttle_secs = 120,     # evaluate every N seconds
+        start_delay_secs = EVAL_START_DELAY,    # start evaluating after N seconds
+        throttle_secs = EVAL_THROTTLE_DELAY,    # evaluate every N seconds
         )
 
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
@@ -364,7 +370,7 @@ with tf.Session() as sess:
         "eval_batch_size": 512,
         "train_steps": 1000000,
         "eval_steps": 10,
-        "hidden_units": "2048 1024 512 256 256 128 64 32 16 8 4",
+        "hidden_units": "2048 1024 512 512 256 128 64 32 16 8 4",
         "eval_delay_secs": 10,
         "min_eval_frequency": 1,
         "format": "csv"
